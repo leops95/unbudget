@@ -1,0 +1,247 @@
+---
+title: "Member States contributions to the United Nations regular budget"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+    theme: yeti #united
+    runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(haven)
+library(rgdal)
+library(dplyr)
+library(V8)
+library(plotly)
+library(tidyr)
+library(shiny)
+library(highcharter)
+library(DT)
+library(stringr)
+
+data(worldgeojson, package = "highcharter")
+
+worldgeojson$features[[179]]$properties$iso3 <- "KOS"
+
+
+data_long <- read_dta("data/clean_all_long.dta")
+data_month <- read_dta("data/clean_nb_month.dta")
+
+data_month_grouped <- group_by(data_month, year)
+```
+
+
+
+Sidebar {.sidebar}
+=====================================
+
+
+```{r}
+selectInput("countryInput", "Select a country", choices = sort(c(data_long$cname)), selected = 1)
+
+selectInput("yearInput", "Select a year", choices = c(data_long$year), selected = 10)
+
+```
+
+
+Author: [Léo Picard](https://leopicard.net) - ETH Zürich
+
+
+
+
+Summary
+=====================================
+
+Row
+-----------------------------------------------------------------------
+
+### Number of countries by month of full payment
+
+```{r}
+p1 <- plot_ly(data_month,
+          x = ~month,
+          y = ~year,
+          z = ~nb_paid,
+          type = "heatmap") %>%
+  config(displayModeBar = F) %>%
+  layout(xaxis=list(fixedrange=TRUE, title = 'Month')) %>%
+  layout(yaxis=list(fixedrange=TRUE, title = 'Year'))
+
+p1
+```
+
+
+
+### Share of assessments paid by year (in current USD)
+
+```{r}
+filtered_y <- reactive(
+  data_month %>%
+    filter(year == input$yearInput))
+
+renderPlotly({
+  p2 <- plot_ly(data_month_grouped,
+          x = ~month,
+          y = ~cumul_share_paid) %>% #~as.factor(year)) %>%
+    add_lines(data = data_month_grouped, x = ~month, y = ~cumul_share_paid, color = I("black"), alpha = 0.1, hoverinfo="none") %>%
+    add_lines(name = "selected year", data = filtered_y(), x = ~month, y = ~cumul_share_paid, color = I("red")) %>%
+    config(displayModeBar = F) %>%
+    layout(xaxis=list(fixedrange=TRUE, title = 'Month')) %>%
+    layout(yaxis=list(fixedrange=TRUE, title = '% of total contributions paid')) %>%
+    layout(showlegend = FALSE)
+  
+  p2
+})
+```
+
+
+Row
+-----------------------------------------------------------------------
+
+### Data
+
+```{r}
+
+DT::datatable(data_month,
+              options = list(pageLength = 100, sDom  = '<"top">t<"bottom">ip'),
+              colnames = c('Year', 'Month', 'Number paid', 'Cumul number paid', 'Share paid', 'Cumul share paid'))
+
+```
+
+
+World map
+=====================================
+
+
+Row
+-----------------------------------------------------------------------
+
+### Status of contributions at the end of the year
+
+
+```{r}
+n <- 2
+
+stops <- data.frame(
+  q = 0:n/n,
+  c = c("#ED4545", "#ffc857", "#5bba6f"), # red, yellow, green
+  stringsAsFactors = FALSE
+)
+
+filtered <- reactive(
+data_long %>%
+  filter(year == input$yearInput))
+
+renderHighchart({
+  stops <- list_parse2(stops)
+  
+  highchart() %>%
+    hc_add_series_map(
+      worldgeojson,
+      filtered(),
+      value = "ontime",
+      joinBy = 'iso3',
+      name = "ontime",
+      borderColor = "#000000",
+      borderWidth = 0.7) %>% 
+    hc_colorAxis(stops = stops) %>%
+    hc_tooltip(useHTML=TRUE, headerFormat='', pointFormat = paste0('<b>Country: </b>{point.cname}<br><b>Contribution: </b>{point.net_assess_str} current USD <br><b>Status: </b>{point.ontime_str}')) #%>% 
+    #hc_exporting(enabled = TRUE, filename = "unbudget_contributions")
+})
+```
+
+
+
+
+By country
+=====================================
+
+
+Row
+-----------------------------------------------------------------------
+
+### Contributions (in current USD)
+
+```{r}
+filtered_c <- reactive(
+  data_long %>%
+  filter(cname == input$countryInput))
+
+renderPlotly({
+  p3 <- plot_ly(filtered_c(),
+                x = ~year,
+                y = ~net_assess) %>%
+    add_lines(name="Index", colors = "gray", alpha=0.7) %>%
+    config(displayModeBar = F) %>%
+    layout(xaxis=list(fixedrange=TRUE, title = 'Year')) %>%
+    layout(yaxis=list(fixedrange=TRUE, title = 'Net assessment'))
+  
+  p3
+})
+```
+
+
+### Contributions (in % of total budget)
+
+```{r}
+filtered_c <- reactive(
+  data_long %>%
+  filter(cname == input$countryInput))
+
+renderPlotly({
+  p4 <- plot_ly(filtered_c(),
+                x = ~year,
+                y = ~scale) %>%
+    add_lines(name="Index", colors = "gray", alpha=0.7) %>%
+    config(displayModeBar = F) %>%
+    layout(xaxis=list(fixedrange=TRUE, title = 'Year')) %>%
+    layout(yaxis=list(fixedrange=TRUE, title = 'Scale of assessment'))
+  
+  p4
+})
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Data
+
+```{r}
+DT::datatable(data_long,
+              options = list(pageLength = 100,
+                             sDom  = '<"top">t<"bottom">ip',
+                             columnDefs = list(list(visible=FALSE, targets=c(5, 7)),
+                                               list(className = 'dt-center'))
+                             ),
+              colnames = c('Country name', 'ISO3 code', 'Year', 'Scale', 'Net assessment', 'Net assessment', 'On time', 'On time', 'Date of payment', 'Exact date'))
+```
+
+
+About
+===================================== 
+
+
+Column
+-----------------------------------------------------------------------
+
+### Disclaimer
+
+This application has been developped for educational and research purposes. It allows users to visualize which countries pay their assessed contributions in time or not.
+
+In a nutshell:
+
+* Contributions are assessed at the end of the preceding year, on the basis of economic performance indicators (mainly gross national income, debt burden and per capital income). For more information, please refer to the [2020 scale of assessments](https://undocs.org/en/A/RES/73/271).
+
+* Member States are expected to pay within a 30 day due period, usually by the end of January.
+
+* Under the Article 19 of the UN Charter, if a country fails to pay back their due, with arrears equaling or exceeding the two preceding years, it can lose its right to vote at the General Assembly.
+
+* Some recent studies have been studying the financing of the United Nations, i.e [International Peace Institute](https://www.ipinst.org/wp-content/uploads/2020/03/2003_Resolving-the-UNs-Financial-Crisis.pdf). But to my knowledge, nothing has been done at the country-level.
+
+LAST DATA UPDATE: SEPTEMBER 2020 (INCLUDED)
+
+This application is built with the [Shiny](https://shiny.rstudio.com/) framework for the [R programming language](https://www.r-project.org/). The application layout is produced with the [flexdashboard](https://rmarkdown.rstudio.com/flexdashboard/) package, and the charts and maps use [PlotLy](https://plotly.com/) and [Highcharter](https://jkunst.com/highcharter/). Source code and data can be found on my [Github repository](https://github.com/leops95/unbudget). I also provide explanations on data collection and problems encountered.
+
+If you have any question, please visit my [personal website](https://leopicard.net) for contact information. I welcome any suggestions !

@@ -1,0 +1,12 @@
+name: unbudget
+title:
+username:
+account: leops95
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2620720
+bundleId: 3780993
+url: https://leops95.shinyapps.io/unbudget/
+when: 1603657912.90955
+asMultiple: FALSE
+asStatic: FALSE
