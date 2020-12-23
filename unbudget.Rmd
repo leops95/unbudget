@@ -1,0 +1,276 @@
+---
+title: "Member States contributions to the United Nations regular budget"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+    theme: yeti
+    source_code: "https://github.com/leops95/unbudget"
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(haven)
+library(plotly)
+library(tidyr)
+library(shiny)
+library(highcharter)
+library(DT)
+library(stringr)
+library(shinyjs)
+library(rsconnect)
+
+data(worldgeojson, package = "highcharter")
+
+worldgeojson$features[[179]]$properties$iso3 <- "KOS"
+
+useShinyjs(rmd = TRUE)
+
+data_long <- read_dta("data/clean_all_long.dta")
+data_month <- read_dta("data/clean_nb_month.dta")
+
+data_month_grouped <- group_by(data_month, year)
+```
+
+
+
+Summary
+=====================================
+
+Sidebar {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+shinyjs::disabled(selectInput("yearInput1", "Select a year", choices = sort(c(data_long$year), decreasing = TRUE), selected = 1))
+```
+
+Author: [Léo Picard](https://leopicard.net) - ETH Zürich
+
+
+
+Row
+-----------------------------------------------------------------------
+
+### Number of countries by month of full payment
+
+```{r}
+p1 <- plot_ly(data_month,
+          x = ~month,
+          y = ~year,
+          z = ~nb_paid,
+          type = "heatmap") %>%
+  config(displayModeBar = F) %>%
+  layout(xaxis=list(fixedrange=TRUE, title = 'Month')) %>%
+  layout(yaxis=list(fixedrange=TRUE, title = 'Year'))
+
+p1
+```
+
+
+
+### Share of assessments paid by year (in current USD)
+
+```{r}
+filtered_y <- reactive(
+  data_month %>%
+    filter(year == input$yearInput1))
+
+renderPlotly({
+  p2 <- plot_ly(data_month_grouped,
+          x = ~month,
+          y = ~cumul_share_paid) %>%
+    add_lines(data = data_month_grouped, x = ~month, y = ~cumul_share_paid, color = I("black"), alpha = 0.1, hoverinfo="none") %>%
+    add_lines(name = "selected year", data = filtered_y(), x = ~month, y = ~cumul_share_paid, color = I("red")) %>%
+    config(displayModeBar = F) %>%
+    layout(xaxis=list(fixedrange=TRUE, title = 'Month')) %>%
+    layout(yaxis=list(fixedrange=TRUE, title = '% of total contributions paid')) %>%
+    layout(showlegend = FALSE)
+  
+  p2
+})
+```
+
+
+Row
+-----------------------------------------------------------------------
+
+### Data
+
+```{r}
+renderDT({
+  DT::datatable(filtered_y(),
+                options = list(pageLength = 12, dom = "t"),
+                colnames = c('Year', 'Month', 'Number paid', 'Cumul number paid', 'Share paid', 'Cumul share paid'),
+                fillContainer = TRUE)
+})
+```
+
+
+World map
+=====================================
+
+Sidebar {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+shinyjs::disabled(selectInput("yearInput2", "Select a year", choices = sort(c(data_long$year), decreasing = TRUE), selected = 1))
+```
+
+Author: [Léo Picard](https://leopicard.net) - ETH Zürich
+
+
+
+Row
+-----------------------------------------------------------------------
+
+### Status of contributions at the end of the year
+
+
+```{r}
+n <- 2
+
+stops <- data.frame(
+  q = 0:n/n,
+  c = c("#ED4545", "#ffc857", "#5bba6f"), # red, yellow, green
+  stringsAsFactors = FALSE
+)
+
+filtered_map <- reactive(
+data_long %>%
+  filter(year == input$yearInput2))
+
+renderHighchart({
+  stops <- list_parse2(stops)
+  
+  highchart() %>%
+    hc_add_series_map(
+      worldgeojson,
+      filtered_map(),
+      value = "ontime",
+      joinBy = 'iso3',
+      name = "ontime",
+      borderColor = "#000000",
+      borderWidth = 0.7) %>% 
+    hc_colorAxis(stops = stops) %>%
+    hc_tooltip(useHTML=TRUE, headerFormat='', pointFormat = paste0('<b>Country: </b>{point.cname}<br><b>Contribution: </b>{point.net_assess_str} current USD <br><b>Status: </b>{point.ontime_str}'))
+})
+```
+
+
+
+
+By country
+=====================================
+
+Sidebar {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+selectInput("countryInput", "Select a country", choices = sort(c(data_long$cname)), selected = 1)
+```
+
+Author: [Léo Picard](https://leopicard.net) - ETH Zürich
+
+
+
+Row
+-----------------------------------------------------------------------
+
+### Contributions (in current USD)
+
+```{r}
+filtered_c <- reactive(
+  data_long %>%
+  filter(cname == input$countryInput))
+
+renderPlotly({
+  p3 <- plot_ly(filtered_c(),
+                x = ~year,
+                y = ~net_assess) %>%
+    add_lines(name="Index", colors = "gray", alpha=0.7) %>%
+    config(displayModeBar = F) %>%
+    layout(xaxis=list(fixedrange=TRUE, title = 'Year')) %>%
+    layout(yaxis=list(fixedrange=TRUE, title = 'Net assessment'))
+  
+  p3
+})
+```
+
+
+### Contributions (in % of total budget)
+
+```{r}
+filtered_c <- reactive(
+  data_long %>%
+  filter(cname == input$countryInput))
+
+renderPlotly({
+  p4 <- plot_ly(filtered_c(),
+                x = ~year,
+                y = ~scale) %>%
+    add_lines(name="Index", colors = "gray", alpha=0.7) %>%
+    config(displayModeBar = F) %>%
+    layout(xaxis=list(fixedrange=TRUE, title = 'Year')) %>%
+    layout(yaxis=list(fixedrange=TRUE, title = 'Scale of assessment'))
+  
+  p4
+})
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Data
+
+```{r}
+renderDT({
+  DT::datatable(filtered_c(),
+                options = list(pageLength = 21,
+                               dom = 't',
+                               columnDefs = list(list(visible=FALSE, targets=c(5, 7)),
+                                                 list(className = 'dt-center'))
+                               ),
+                colnames = c('Country name', 'ISO3 code', 'Year', 'Scale', 'Net assessment', 'Net assessment', 'On time', 'On time', 'Date of payment', 'Exact date'),
+                fillContainer = TRUE)
+})
+```
+
+
+About
+===================================== 
+Sidebar {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+```
+
+Author: [Léo Picard](https://leopicard.net) - ETH Zürich
+
+
+
+Column
+-----------------------------------------------------------------------
+
+### Disclaimer
+
+This application has been developed for educational and research purposes. It allows users to visualize which countries pay their assessed contributions in time or not.
+
+In a nutshell:
+
+* Some recent studies have been studying the financing of the United Nations, like the [International Peace Institute](https://www.ipinst.org/wp-content/uploads/2020/03/2003_Resolving-the-UNs-Financial-Crisis.pdf). But to my knowledge, very few has been done at the country-level.
+
+* Contributions are assessed at the end of the preceding year, on the basis of economic performance indicators (mainly gross national income, debt burden and income per capita). For more information, please refer to the [2020 scale of assessments](https://undocs.org/en/A/RES/73/271).
+
+* Member States are expected to pay within a 30 day due period, usually by the end of January. If they do not pay within the year, the outstanding amount overflows to the next year.
+
+* Under the Article 19 of the UN Charter, if a country fails to pay back their due, with arrears equaling or exceeding the two preceding years, it can lose its right to vote at the General Assembly. Such sanctions are rare but can happen when Member States are facing recurrent financial problems.
+
+* If a country does not appear for a given year in my dataset, it either means data was not available for that month, or they haven't paid their dues in full by the end of the year. That does NOT mean they haven't paid at all. I discuss data collection and issues encountered on my [Github repository](https://github.com/leops95/unbudget).
+
+
+**Last data update: December 23, 2020**
+
+This application is built with the [Shiny](https://shiny.rstudio.com/) framework for the [R programming language](https://www.r-project.org/). The application layout is produced with the [Flexdashboard](https://rmarkdown.rstudio.com/flexdashboard/) package, and the charts and maps use [Plotly](https://plotly.com/) and [Highcharter](https://jkunst.com/highcharter/). Source code and data can be found on my [Github repository](https://github.com/leops95/unbudget).
+
+If you have any question, please visit my [personal website](https://leopicard.net) for contact information. I welcome any suggestions !

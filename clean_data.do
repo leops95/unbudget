@@ -1,4 +1,4 @@
-cd "~/desktop/New Folder"
+cd "~/GitHub/unbudget"
 
 //ssc install fre // useful for reading long value labels
 
@@ -149,7 +149,7 @@ generate part2 = substr(net_assess_str, -6, 3)
 replace part2 = substr(net_assess_str, -5, 2) if part2 == ""
 generate part3 = substr(net_assess_str, -9, 3)
 replace part3 = substr(net_assess_str, -8, 2) if part3 == ""
-replace part3 = substr(net_assess_str, -7, 1) if part2 == ""
+replace part3 = substr(net_assess_str, -7, 1) if part3 == ""
 
 replace net_assess_str = part3 + "'" + part2 + "'" + part1 if part3 != ""
 replace net_assess_str = part2 + "'" + part1 if(part2 != "" & part3 == "")
@@ -218,7 +218,7 @@ keep iso3 year month net_assess
 egen iso_int = group(iso3)
 drop iso3
 
-bysort year: egen total_contrib = max(sum(net_assess))
+bysort year: egen total_contrib = sum(net_assess) //max(sum(net_assess))
 replace net_assess = net_asses / total_contrib
 
 collapse (count) iso_int (sum) net_assess, by(year month)
@@ -273,7 +273,6 @@ drop if(year == 2009 &(month == 10 | month == 11 | month == 12))
 drop if(year == 2010 & month == 12)
 drop if(year == 2013 &(month == 11 | month == 12))
 drop if(year == 2018 &(month == 11 | month == 12))
-drop if(year == 2020 &(month == 10 | month == 11 | month == 12))
 
 rename tot_paid cumul_paid
 rename share_paid cumul_share_paid
@@ -288,6 +287,7 @@ sort year month
 label variable nb_paid
 label variable share_paid
 
+recast double cumul_share_paid
 
 ** EXPORT MONTHLY PAYMENTS
 save data/clean_nb_month.dta, replace
