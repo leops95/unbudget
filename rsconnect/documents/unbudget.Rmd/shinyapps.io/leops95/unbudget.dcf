@@ -5,6 +5,6 @@ account: leops95
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2620720
-bundleId: 4022366
+bundleId: 4242525
 url: https://leops95.shinyapps.io/unbudget/
-when: 1608728424.63958
+when: 1613682067.51531

@@ -6,6 +6,7 @@ output:
     vertical_layout: fill
     theme: yeti
     source_code: "https://github.com/leops95/unbudget"
+    self_contained: false
 runtime: shiny
 ---
 
@@ -264,7 +265,7 @@ In a nutshell:
 
 * Member States are expected to pay within a 30 day due period, usually by the end of January. If they do not pay within the year, the outstanding amount overflows to the next year.
 
-* Under the Article 19 of the UN Charter, if a country fails to pay back their due, with arrears equaling or exceeding the two preceding years, it can lose its right to vote at the General Assembly. Such sanctions are rare but can happen when Member States are facing recurrent financial problems.
+* Under the Article 19 of the UN Charter, if a country fails to pay back their due with arrears equaling or exceeding the two preceding years, it can lose its right to vote at the General Assembly. Such sanctions are rare but can happen when Member States are facing recurrent financial problems.
 
 * If a country does not appear for a given year in my dataset, it either means data was not available for that month, or they haven't paid their dues in full by the end of the year. That does NOT mean they haven't paid at all. I discuss data collection and issues encountered on my [Github repository](https://github.com/leops95/unbudget).
 

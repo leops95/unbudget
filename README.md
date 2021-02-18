@@ -1,6 +1,8 @@
 # Member States contributions to the United Nations Regular Budget
 
-This is an interactive data visualization application made with Shiny for R. The application is accessible using this link: <https://leops95.shinyapps.io/unbudget/>.
+This repository contains an interactive application for data visualization made with Shiny for R. The dashboard is accessible using this link: <https://leops95.shinyapps.io/unbudget/>.
+
+In the data folder, `clean_all_long.dta` contains...
 
 ## Data collection:
 Data comes from the [United Nations Committee on Contributions](https://www.un.org/en/ga/contributions/) and can be downloaded in Excel and Stata format on this repository.
