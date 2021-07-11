@@ -1,11 +1,13 @@
-# Member States contributions to the United Nations Regular Budget
+# Member States contributions to the United Nations regular budget
 
-This repository contains an interactive application for data visualization made with Shiny for R. The dashboard is accessible using this link: <https://leops95.shinyapps.io/unbudget/>.
+This repository contains an interactive application for data visualization made with Shiny for R. The dashboard is accessible using this link: <https://leops95.shinyapps.io/unbudget/>
 
 ## Data collection:
 Data comes from the [United Nations Committee on Contributions](https://www.un.org/en/ga/contributions/) and can be downloaded in Excel and Stata format on this repository.
 
-Surprisingly, such data is not publicly and readily available to the general public. Only data on the current and last year are displayed on [this page](https://www.un.org/en/ga/contributions/honourroll.shtml). To retrieve past years' data, I used the Web Archive [Wayback Machine](http://archive.org/web/) in order to access old versions of the same web page. This permitted me to go back to 2000 but with some missing months (october to december in some years).
+Surprisingly, such data is not publicly and readily available to the general public. Only data for the last 3 years are displayed on [this page](https://www.un.org/en/ga/contributions/honourroll.shtml). To retrieve past years' data, I used the Web Archive [Wayback Machine](http://archive.org/web/) in order to access old versions of the same web page. This permitted me to go back to 2000 but with some missing months (october to december in some years).
+
+
 
 ## Issues encountered:
 * If the web page has not been updated by the end of the year, it is replaced by a new table on the beginning of the next year. Hence, countries having paid after the last web page update will be missing and considered as not having fully-paid their yearly contribution. Therefore, I am missing the following months: october-december 2006, october-december 2009, december 2010, november-december 2011, november-december 2018.

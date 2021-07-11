@@ -14,17 +14,18 @@ runtime: shiny
 library(flexdashboard)
 library(haven)
 library(plotly)
-library(tidyr)
+#library(tidyr)
 library(shiny)
 library(highcharter)
 library(DT)
-library(stringr)
+#library(stringr)
 library(shinyjs)
 library(rsconnect)
 
 data(worldgeojson, package = "highcharter")
 
 worldgeojson$features[[179]]$properties$iso3 <- "KOS"
+worldgeojson$features[[127]]$properties$iso3 <- "SML"
 
 useShinyjs(rmd = TRUE)
 

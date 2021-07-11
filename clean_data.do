@@ -1,4 +1,4 @@
-cd "~/GitHub/unbudget"
+cd "~/unbudget"
 
 //ssc install fre // useful for reading long value labels
 
@@ -138,8 +138,8 @@ drop _merge
 replace ontime = 2 if ontime == 1 // paid on time
 replace ontime = 1 if ontime == 0 // paid late
 replace ontime = 0 if ontime == . // did not pay in full during the year
-gen ontime_str = "Not paid in full" if ontime == 0
-replace ontime_str = "Paid late" if ontime == 1
+gen ontime_str = "Not paid in full by the end of the year" if ontime == 0
+replace ontime_str = "Paid after the deadline but within the year" if ontime == 1
 replace ontime_str = "Paid on time" if ontime == 2
 
 generate net_assess_str = net_assess
@@ -179,6 +179,9 @@ replace iso3 = "KOS" if cname == "Yugoslavia" & dup == 3
 replace iso3 = "SSD" if cname == "Sudan" & dup == 2
 drop if dup == 3 & iso3 != "KOS"
 drop dup
+
+drop if(cname == "Sudan" & iso3 == "SSD" & year >= 2013)
+
 
 ** RENAME COUNTRIES TO ACTUAL NAMES
 replace cname = "Bosnia and Herzegovina" if cname == "Bosnia Herzegovina"
